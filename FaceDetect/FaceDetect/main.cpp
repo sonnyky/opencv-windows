@@ -32,8 +32,6 @@ int main(int argc, char** argv)
 	BSTR media_url = SysAllocString(L"C:/Users/Sonny/Desktop/knightrider.mp3");
 	BSTR another_media_url = SysAllocString(L"C:/Users/Sonny/Desktop/missionimpossible.mp3");
 
-	
-
 	Mat overlay_image = imread("../Stamps/bunny_ears.png", cv::IMREAD_UNCHANGED);
 	resize(overlay_image, overlay_image, Size(128, 64));
 	imshow("overlay",overlay_image);
@@ -51,7 +49,6 @@ int main(int argc, char** argv)
 
 	cap.set(CAP_PROP_FRAME_WIDTH, 640);
 	cap.set(CAP_PROP_FRAME_HEIGHT, 320);
-
 
 	/*
 	CoInitialize(NULL);
