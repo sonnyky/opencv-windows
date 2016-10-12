@@ -4,22 +4,25 @@
 #include "opencv2/opencv.hpp"
 #include <iostream>
 
-#include "atlbase.h"
-#include "atlwin.h"
-#include "wmp.h"
-
 using namespace cv;
 using namespace std;
 
 void  DrawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseImg, vector<cv::Point2f> tgtPt);
-
 void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	CascadeClassifier& nestedCascade,
 	double scale, bool tryflip, Mat& overlayImg);
+Mat filterSkinColor(Mat frame);
+void zoomPicture(cv::Mat src, cv::Mat dst, cv::Point2i center, double rate);
 
 string cascadeName;
 string nestedCascadeName;
 
+bool zoomEffect = false; bool face_detected = false;
+int zoomStep = 5;
+double maxZoomFactor = 3.0, curZoomFactor = 1.0;
+
+int captureHeight = 320;
+int captureWidth = 640;
 int main(int argc, char** argv)
 {
 	VideoCapture cap(0); // open the default camera
@@ -29,13 +32,8 @@ int main(int argc, char** argv)
 	double scale = 1.0;
 	bool tryflip = true;
 
-	BSTR media_url = SysAllocString(L"C:/Users/Sonny/Desktop/knightrider.mp3");
-	BSTR another_media_url = SysAllocString(L"C:/Users/Sonny/Desktop/missionimpossible.mp3");
-
-	Mat overlay_image = imread("../Stamps/bunny_ears.png", cv::IMREAD_UNCHANGED);
-	resize(overlay_image, overlay_image, Size(128, 64));
-	imshow("overlay",overlay_image);
-
+	Mat overlay_image = imread("../Stamps/kabuki.png", cv::IMREAD_UNCHANGED);
+	
 	if (!cap.isOpened())  // check if we succeeded
 		return -1;
 
@@ -47,44 +45,28 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	cap.set(CAP_PROP_FRAME_WIDTH, 640);
-	cap.set(CAP_PROP_FRAME_HEIGHT, 320);
-
-	/*
-	CoInitialize(NULL);
-	
-	HRESULT hr = S_OK;
-	CComBSTR bstrVersionInfo; // Contains the version string.
-	CComPtr<IWMPPlayer4> spPlayer;  // Smart pointer to IWMPPlayer interface.
-	
-	hr = spPlayer.CoCreateInstance(__uuidof(WindowsMediaPlayer), 0, CLSCTX_INPROC_SERVER);
-
-	if (SUCCEEDED(hr))
-	{
-		hr = spPlayer->get_versionInfo(&bstrVersionInfo);
-		spPlayer->openPlayer(media_url);
-	}
-	*/
-
+	cap.set(CAP_PROP_FRAME_WIDTH, captureWidth);
+	cap.set(CAP_PROP_FRAME_HEIGHT, captureHeight);
 
 	for (;;)
 	{
 		Mat frame;
-		cap >> frame; // get a new frame from camera
+		int64 start = cv::getTickCount();
 
+		cap >> frame; // get a new frame from camera
 		Mat frame1 = frame.clone();
-		detectAndDraw(frame1, cascade, nestedCascade, scale, tryflip, overlay_image);
-		
+		Mat frame2 = frame1.clone();
+			frame2 = filterSkinColor(frame1);
+		detectAndDraw(frame2, cascade, nestedCascade, scale, tryflip, overlay_image);
+		int64 end = cv::getTickCount();
+		double elapsedMsec = (end - start) * 1000 / cv::getTickFrequency();
+		std::cout << elapsedMsec << "ms" << std::endl;
+
 		int c = waitKey(10);
 		if (c == 27 || c == 'q' || c == 'Q')
 			break;
 	}
 
-	// Clean up.
-	//spPlayer->openPlayer(another_media_url);
-	//spPlayer.Release();
-	//CoUninitialize();
-	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;
 }
 
@@ -93,7 +75,13 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	double scale, bool tryflip, Mat& overlayImg)
 {
 	double t = 0;
-	vector<Rect> faces, faces2;
+	double zoomFactor = 1.0;
+	vector<Rect> faces, faces2, nestedObjects;
+	Mat zoomedImage = img.clone();
+	CvRect roiRect;
+
+	roiRect.x = 0; roiRect.y = 0; roiRect.width = 0; roiRect.height = 0;
+
 	const static Scalar colors[] =
 	{
 		Scalar(255,0,0),
@@ -105,7 +93,7 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 		Scalar(0,0,255),
 		Scalar(255,0,255)
 	};
-	Mat gray, smallImg;
+	Mat gray, smallImg, smallImgROI;
 
 	cvtColor(img, gray, COLOR_BGR2GRAY);
 	double fx = 1 / scale;
@@ -123,53 +111,74 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	{
 		flip(smallImg, smallImg, 1);
 		cascade.detectMultiScale(smallImg, faces2,
-			1.1, 2, 0
-			|CASCADE_FIND_BIGGEST_OBJECT,
+			1.1, 15, 0
+			//|CASCADE_FIND_BIGGEST_OBJECT,
 			//|CASCADE_DO_ROUGH_SEARCH
-			//| CASCADE_SCALE_IMAGE,
+			| CASCADE_SCALE_IMAGE,
 			Size(30, 30));
 		for (vector<Rect>::const_iterator r = faces2.begin(); r != faces2.end(); r++)
 		{
-			faces.push_back(Rect(smallImg.cols - r->x - r->width, r->y, r->width, r->height));
+			Rect tempRect = Rect(smallImg.cols - r->x - r->width, r->y, r->width, r->height);
+			smallImgROI = smallImg(tempRect);
+			cascade.detectMultiScale(smallImgROI, nestedObjects,
+				1.1, 3, 0
+				//|CASCADE_FIND_BIGGEST_OBJECT,
+				//|CASCADE_DO_ROUGH_SEARCH
+				| CASCADE_SCALE_IMAGE,
+				Size(30, 30));
+			if (nestedObjects.size() > 0) {
+				faces.push_back(Rect(smallImg.cols - r->x - r->width, r->y, r->width, r->height));
+			}
 		}
 	}
 	t = (double)cvGetTickCount() - t;
 	//printf("detection time = %g ms\n", t / ((double)cvGetTickFrequency()*1000.));
-	for (size_t i = 0; i < faces.size(); i++)
-	{
-		Rect r = faces[i];
-		Mat smallImgROI;
-		vector<Rect> nestedObjects;
-		Point center;
-		Scalar color = colors[i % 8];
-		int radius;
-		int offset_y_face = r.y - (r.width*0.75);
-
-		vector<cv::Point2f>tgtPt;
-
-		tgtPt.push_back(cv::Point2f(r.x, offset_y_face));
-		tgtPt.push_back(cv::Point2f(r.x + r.width, offset_y_face));
-		tgtPt.push_back(cv::Point2f(r.x + r.width, offset_y_face + r.height));
-		tgtPt.push_back(cv::Point2f(r.x, offset_y_face + r.height));
-
-		double aspect_ratio = (double)r.width / r.height;
-		if (0.75 < aspect_ratio && aspect_ratio < 1.3)
+	if (faces.size() > 0) {
+		for (size_t i = 0; i < 1; i++) // i < 1 instead of faces.size() to get only one face
 		{
-			center.x = cvRound((r.x + r.width*0.5)*scale);
-			center.y = cvRound((r.y + r.height*0.5)*scale);
-			radius = cvRound((r.width + r.height)*0.25*scale);
-			circle(img, center, radius, color, 3, 8, 0);
-		
-			DrawTransPinP(img, overlayImg,img, tgtPt);
+			Rect r = faces[i];
+			//Mat smallImgROI;
+			//vector<Rect> nestedObjects;
+			Point center;
+			Scalar color = colors[i % 8];
+			int radius;
+			int zoomed_x, zoomed_y, zoomed_width, zoomed_height;
+			int offset_y_face = r.y - (r.width*0.25);
+
+			vector<cv::Point2f>tgtPt;
+			zoomed_height = r.height;
+			zoomed_width = (float(captureWidth / captureHeight) * r.height);
+			zoomed_x = r.x - ((float(captureWidth / captureHeight) * r.height) - r.width) / 2;
+			zoomed_y = r.y + zoomed_height;
+
+			tgtPt.push_back(cv::Point2f(r.x, offset_y_face));
+			tgtPt.push_back(cv::Point2f(r.x + r.width, offset_y_face));
+			tgtPt.push_back(cv::Point2f(r.x + r.width, offset_y_face + r.height));
+			tgtPt.push_back(cv::Point2f(r.x, offset_y_face + r.height));
+
+			double aspect_ratio = (double)r.width / r.height;
+			if (0.75 < aspect_ratio && aspect_ratio < 1.3)
+			{
+
+				center.x = cvRound((r.x + r.width*0.5)*scale);
+				center.y = cvRound((r.y + r.height*0.5)*scale);
+				radius = cvRound((r.width + r.height)*0.25*scale);
+				//circle(img, center, radius, color, 3, 8, 0);
+
+				DrawTransPinP(img, overlayImg, img, tgtPt);
+
+				if (curZoomFactor > 2.0) curZoomFactor = 2.0;
+				zoomPicture(img, zoomedImage, Point2i((r.x + r.width / 2), (r.y + r.height / 3)), curZoomFactor);
+				curZoomFactor += maxZoomFactor / zoomStep;
+			}		
 		}
-		
-		else
-			rectangle(img, cvPoint(cvRound(r.x*scale), cvRound(r.y*scale)),
-				cvPoint(cvRound((r.x + r.width - 1)*scale), cvRound((r.y + r.height - 1)*scale)),
-				color, 3, 8, 0);
-		
 	}
+	else {
+		curZoomFactor = 1.0;
+	}
+	
 	imshow("result", img);
+	imshow("zoomed", zoomedImage);
 }
 
 void DrawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseImg, vector<cv::Point2f> tgtPt)
@@ -236,4 +245,50 @@ void DrawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseI
 	merge(planes_1ma, img_1ma);
 
 	img_dst = img_rgb.mul(img_aaa, 1.0 / (double)maxVal) + baseImg.mul(img_1ma, 1.0 / (double)maxVal);
+}
+
+void zoomPicture(cv::Mat src, cv::Mat dst, cv::Point2i center, double rate)
+{
+	if (rate < 1.0) {//k¬‚Í–¢‘Î‰ž‚È‚Ì‚Å‚»‚Ì‚Ü‚Ü
+		src.copyTo(dst);
+		return;
+	}
+
+	cv::Mat resizeSrc;
+	cv::resize(src, resizeSrc, cv::Size2i(0, 0), rate, rate);
+	//Šg‘åŒã‚ÌŠg‘å’†S
+	cv::Point2i resizeCenter(center.x*rate, center.y*rate);
+
+	//Šg‘å’†S‚ÆŠg‘å—¦‚ÌÝ’èŽŸ‘æ‚ÅŒ³‚Ì‰æ‘œ‚ð‚Í‚Ýo‚µ‚Ä‚µ‚Ü‚¤‚Ì‚Å—]”’‚ð“ü‚ê‚é
+	int blankHeight = src.rows / 2;//Œ³‰æ‘œ‚Ìã‰º‚É‚»‚ê‚¼‚ê“ü‚ê‚é—]”’‚Ì‰æ‘f”
+	int blankWidth = src.cols / 2;//Œ³‰æ‘œ‚Ì¶‰E‚É‚»‚ê‚¼‚ê“ü‚ê‚é—]”’‚Ì‰æ‘f”
+	cv::Mat resizeSrcOnBlank = cv::Mat::zeros(resizeSrc.rows + 2 * blankHeight, resizeSrc.cols + 2 * blankWidth, CV_8UC3);
+	resizeSrc.copyTo(resizeSrcOnBlank(cv::Rect(blankWidth, blankHeight, resizeSrc.cols, resizeSrc.rows)));
+	resizeSrcOnBlank(cv::Rect(resizeCenter.x + blankWidth - src.cols / 2, resizeCenter.y + blankHeight - src.rows / 2, src.cols, src.rows)).copyTo(dst);
+	return;
+
+}
+
+//this function will return a skin masked image
+Mat filterSkinColor(Mat input)
+{
+	//YCrCb threshold
+	// You can change the values and see what happens
+	int Y_MIN = 0;
+	int Y_MAX = 255;
+	int Cr_MIN = 133;
+	int Cr_MAX = 173;
+	int Cb_MIN = 77;
+	int Cb_MAX = 127;
+	cv::Mat skin, mask;
+	//first convert our RGB image to YCrCb
+	cvtColor(input, skin, cv::COLOR_BGR2YCrCb);
+	mask = skin.clone();
+	//uncomment the following line to see the image in YCrCb Color Space
+	imshow("YCrCb Color Space",skin);
+
+	//filter the image in YCrCb color space
+	inRange(skin, Scalar(Y_MIN, Cr_MIN, Cb_MIN), Scalar(Y_MAX, Cr_MAX, Cb_MAX), mask);
+
+	return skin;
 }

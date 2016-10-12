@@ -3,23 +3,25 @@ c:\users\sonny\desktop\workspace\opencv\build\include\opencv2\core\mat.hpp(1965)
 c:\users\sonny\desktop\workspace\opencv\build\include\opencv2\core\persistence.hpp : warning C4819: The file contains a character that cannot be represented in the current code page (932). Save the file in Unicode format to prevent data loss
 c:\users\sonny\desktop\workspace\opencv\build\include\opencv2\core\utility.hpp : warning C4819: The file contains a character that cannot be represented in the current code page (932). Save the file in Unicode format to prevent data loss
 c:\users\sonny\desktop\workspace\opencv\build\include\opencv2\core\utility.hpp : warning C4819: The file contains a character that cannot be represented in the current code page (932). Save the file in Unicode format to prevent data loss
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(23): warning C4100: 'argv': unreferenced formal parameter
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(23): warning C4100: 'argc': unreferenced formal parameter
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(32): warning C4189: 'media_url': local variable is initialized but not referenced
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(33): warning C4189: 'another_media_url': local variable is initialized but not referenced
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(26): warning C4100: 'argv': unreferenced formal parameter
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(26): warning C4100: 'argc': unreferenced formal parameter
 c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(146): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(150): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(151): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(152): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(153): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(92): warning C4100: 'nestedCascade': unreferenced formal parameter
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(179): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(198): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(199): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(200): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(201): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(150): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(151): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(154): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(155): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(156): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(157): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(74): warning C4100: 'nestedCascade': unreferenced formal parameter
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(78): warning C4189: 'zoomFactor': local variable is initialized but not referenced
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(188): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
 c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(207): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
 c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(208): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
 c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(209): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(210): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(216): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(217): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(218): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(260): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
   FaceDetect.vcxproj -> C:\Users\Sonny\Desktop\Workspace\OpenCV-Projects\FaceDetection\FaceDetect\Debug\FaceDetect.exe
   FaceDetect.vcxproj -> C:\Users\Sonny\Desktop\Workspace\OpenCV-Projects\FaceDetection\FaceDetect\Debug\FaceDetect.pdb (Full PDB)
