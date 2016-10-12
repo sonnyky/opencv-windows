@@ -10,8 +10,8 @@ using namespace std;
 void  DrawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseImg, vector<cv::Point2f> tgtPt);
 void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	CascadeClassifier& nestedCascade,
-	double scale, bool tryflip, Mat& overlayImg);
-Mat filterSkinColor(Mat frame);
+	double scale, bool tryflip, Mat& overlayImg, Rect roi_area);
+Rect filterSkinColor(Mat frame);
 void zoomPicture(cv::Mat src, cv::Mat dst, cv::Point2i center, double rate);
 
 string cascadeName;
@@ -55,9 +55,8 @@ int main(int argc, char** argv)
 
 		cap >> frame; // get a new frame from camera
 		Mat frame1 = frame.clone();
-		Mat frame2 = frame1.clone();
-			frame2 = filterSkinColor(frame1);
-		detectAndDraw(frame2, cascade, nestedCascade, scale, tryflip, overlay_image);
+		Rect face_area = filterSkinColor(frame1);
+		detectAndDraw(frame1, cascade, nestedCascade, scale, tryflip, overlay_image, face_area);
 		int64 end = cv::getTickCount();
 		double elapsedMsec = (end - start) * 1000 / cv::getTickFrequency();
 		std::cout << elapsedMsec << "ms" << std::endl;
@@ -72,7 +71,7 @@ int main(int argc, char** argv)
 
 void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	CascadeClassifier& nestedCascade,
-	double scale, bool tryflip, Mat& overlayImg)
+	double scale, bool tryflip, Mat& overlayImg, Rect roi_area)
 {
 	double t = 0;
 	double zoomFactor = 1.0;
@@ -126,7 +125,7 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 				//|CASCADE_DO_ROUGH_SEARCH
 				| CASCADE_SCALE_IMAGE,
 				Size(30, 30));
-			if (nestedObjects.size() > 0) {
+			if (nestedObjects.size() > 0 && roi_area.x >= tempRect.x && roi_area.y >= tempRect.y) {
 				faces.push_back(Rect(smallImg.cols - r->x - r->width, r->y, r->width, r->height));
 			}
 		}
@@ -270,25 +269,44 @@ void zoomPicture(cv::Mat src, cv::Mat dst, cv::Point2i center, double rate)
 }
 
 //this function will return a skin masked image
-Mat filterSkinColor(Mat input)
+Rect filterSkinColor(Mat input)
 {
+	int largest_area = 0;
+	int largest_contour_index = 0;
+	Rect bounding_rect;
 	//YCrCb threshold
 	// You can change the values and see what happens
 	int Y_MIN = 0;
 	int Y_MAX = 255;
-	int Cr_MIN = 133;
+	int Cr_MIN = 143;
 	int Cr_MAX = 173;
-	int Cb_MIN = 77;
+	int Cb_MIN = 97;
 	int Cb_MAX = 127;
-	cv::Mat skin, mask;
+	cv::Mat skin, mask, mask_grey;
 	//first convert our RGB image to YCrCb
 	cvtColor(input, skin, cv::COLOR_BGR2YCrCb);
 	mask = skin.clone();
-	//uncomment the following line to see the image in YCrCb Color Space
-	imshow("YCrCb Color Space",skin);
-
 	//filter the image in YCrCb color space
 	inRange(skin, Scalar(Y_MIN, Cr_MIN, Cb_MIN), Scalar(Y_MAX, Cr_MAX, Cb_MAX), mask);
+	vector<vector<Point>> contours; // Vector for storing contour
+	vector<Vec4i> hierarchy;
 
-	return skin;
+	findContours(mask, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE); // Find the contours in the image
+
+	for (int i = 0; i< contours.size(); i++) // iterate through each contour. 
+	{
+		double a = contourArea(contours[i], false);  //  Find the area of contour
+		if (a>largest_area) {
+			largest_area = a;
+			largest_contour_index = i;                //Store the index of largest contour
+			bounding_rect = boundingRect(contours[i]); // Find the bounding rectangle for biggest contour
+		}
+	}
+	Scalar color(255, 255, 255);
+	drawContours(skin, contours, largest_contour_index, color, CV_FILLED, 8, hierarchy); // Draw the largest contour using previously stored index.
+	rectangle(skin, bounding_rect, Scalar(0, 255, 0), 1, 8, 0);
+	
+	imshow("YCrCb Color Space", skin);
+
+	return bounding_rect;
 }
