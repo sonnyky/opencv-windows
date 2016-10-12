@@ -19,10 +19,12 @@ string nestedCascadeName;
 
 bool zoomEffect = false; bool face_detected = false;
 int zoomStep = 5;
-double maxZoomFactor = 3.0, curZoomFactor = 1.0;
+double maxZoomFactor = 2.3, curZoomFactor = 1.0;
+int faceFoundConfidenceIteration = 20, currentIteration = 0;
 
-int captureHeight = 320;
-int captureWidth = 640;
+int captureHeight = 1280;
+int captureWidth = 720;
+
 int main(int argc, char** argv)
 {
 	VideoCapture cap(0); // open the default camera
@@ -57,6 +59,7 @@ int main(int argc, char** argv)
 		Mat frame1 = frame.clone();
 		Rect face_area = filterSkinColor(frame1);
 		detectAndDraw(frame1, cascade, nestedCascade, scale, tryflip, overlay_image, face_area);
+
 		int64 end = cv::getTickCount();
 		double elapsedMsec = (end - start) * 1000 / cv::getTickFrequency();
 		std::cout << elapsedMsec << "ms" << std::endl;
@@ -98,7 +101,7 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	double fx = 1 / scale;
 	resize(gray, smallImg, Size(), fx, fx, INTER_LINEAR);
 	equalizeHist(smallImg, smallImg);
-
+	
 	t = (double)cvGetTickCount();
 	cascade.detectMultiScale(smallImg, faces,
 		1.1, 2, 0
@@ -135,6 +138,7 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	if (faces.size() > 0) {
 		for (size_t i = 0; i < 1; i++) // i < 1 instead of faces.size() to get only one face
 		{
+			currentIteration++;
 			Rect r = faces[i];
 			//Mat smallImgROI;
 			//vector<Rect> nestedObjects;
@@ -166,17 +170,27 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 
 				DrawTransPinP(img, overlayImg, img, tgtPt);
 
-				if (curZoomFactor > 2.0) curZoomFactor = 2.0;
-				zoomPicture(img, zoomedImage, Point2i((r.x + r.width / 2), (r.y + r.height / 3)), curZoomFactor);
-				curZoomFactor += maxZoomFactor / zoomStep;
+				if (currentIteration > faceFoundConfidenceIteration) {
+					if (curZoomFactor > maxZoomFactor) curZoomFactor = maxZoomFactor;
+					zoomPicture(img, zoomedImage, Point2i((r.x + r.width / 2), (r.y + r.height / 3)), curZoomFactor);
+					curZoomFactor += maxZoomFactor / zoomStep;
+				}
+				rectangle(img, cv::Point(roi_area.x, roi_area.y), cv::Point(roi_area.x + roi_area.width, roi_area.y + roi_area.height), color, 3, 8, 0);
+
 			}		
 		}
 	}
 	else {
+		currentIteration = 0;
 		curZoomFactor = 1.0;
 	}
+
 	
-	imshow("result", img);
+	cvNamedWindow("zoomed", CV_WINDOW_NORMAL);
+	cvSetWindowProperty("zoomed", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+	//imshow("zoomed", zoomedImage);
+	
+	//imshow("result", img);
 	imshow("zoomed", zoomedImage);
 }
 
@@ -278,9 +292,9 @@ Rect filterSkinColor(Mat input)
 	// You can change the values and see what happens
 	int Y_MIN = 0;
 	int Y_MAX = 255;
-	int Cr_MIN = 143;
+	int Cr_MIN = 133;
 	int Cr_MAX = 173;
-	int Cb_MIN = 97;
+	int Cb_MIN = 77;
 	int Cb_MAX = 127;
 	cv::Mat skin, mask, mask_grey;
 	//first convert our RGB image to YCrCb
@@ -303,10 +317,9 @@ Rect filterSkinColor(Mat input)
 		}
 	}
 	Scalar color(255, 255, 255);
-	drawContours(skin, contours, largest_contour_index, color, CV_FILLED, 8, hierarchy); // Draw the largest contour using previously stored index.
-	rectangle(skin, bounding_rect, Scalar(0, 255, 0), 1, 8, 0);
-	
-	imshow("YCrCb Color Space", skin);
+	//drawContours(skin, contours, largest_contour_index, color, CV_FILLED, 8, hierarchy); // Draw the largest contour using previously stored index.
+	//rectangle(skin, bounding_rect, Scalar(0, 255, 0), 1, 8, 0);
+	//imshow("skin", skin);
 
 	return bounding_rect;
 }
