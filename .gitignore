@@ -1,2 +1,4 @@
 FaceDetect/Debug/
 *.opendb
+*.mp3
+FaceDetect/FaceDetect.VC.db

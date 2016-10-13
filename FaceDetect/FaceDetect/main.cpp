@@ -3,39 +3,77 @@
 #include <opencv2/highgui.hpp>
 #include "opencv2/opencv.hpp"
 #include <iostream>
+#include "atlbase.h"
+#include "atlwin.h"
+#include "wmp.h"
+#include <Windows.h>
+#include <comutil.h>
 
 using namespace cv;
 using namespace std;
 
-void  DrawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseImg, vector<cv::Point2f> tgtPt);
-void detectAndDraw(Mat& img, CascadeClassifier& cascade,
-	CascadeClassifier& nestedCascade,
-	double scale, bool tryflip, Mat& overlayImg, Rect roi_area);
+#define BUFSIZE 4096
+
+/*
+main 以外の関数宣言
+*/
+void detectAndDraw(Mat& img, CascadeClassifier& cascade, CascadeClassifier& nestedCascade, double scale, bool tryflip, Mat& overlayImg, Rect roi_area, CComPtr<IWMPPlayer4> player);
+void  drawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseImg, vector<cv::Point2f> tgtPt);
 Rect filterSkinColor(Mat frame);
 void zoomPicture(cv::Mat src, cv::Mat dst, cv::Point2i center, double rate);
 
-string cascadeName;
-string nestedCascadeName;
-
+/*
+顔ズームイン用
+*/
 bool zoomEffect = false; bool face_detected = false;
 int zoomStep = 5;
 double maxZoomFactor = 2.3, curZoomFactor = 1.0;
 int faceFoundConfidenceIteration = 20, currentIteration = 0;
+BSTR media_url;
 
+/*
+キャプチャと顔認識の設定
+*/
 int captureHeight = 1280;
 int captureWidth = 720;
+string cascadeName = "C:/Users/Sonny/Desktop/Workspace/opencv/build/etc/haarcascades/haarcascade_frontalface_alt2.xml";
+string nestedCascadeName = "C:/Users/Sonny/Desktop/Workspace/opencv/build/etc/haarcascades/haarcascade_eye.xml";
+double scale = 1.0;
+bool tryflip = true;
 
 int main(int argc, char** argv)
 {
 	VideoCapture cap(0); // open the default camera
 	CascadeClassifier cascade, nestedCascade;
-	cascadeName = "C:/Users/Sonny/Desktop/Workspace/opencv/build/etc/haarcascades/haarcascade_frontalface_alt2.xml";
-	nestedCascadeName = "C:/Users/Sonny/Desktop/Workspace/opencv/build/etc/haarcascades/haarcascade_eye.xml";
-	double scale = 1.0;
-	bool tryflip = true;
-
 	Mat overlay_image = imread("../Stamps/kabuki.png", cv::IMREAD_UNCHANGED);
+
+	DWORD  retval = 0;
+	BOOL   success;
+	TCHAR  buffer[BUFSIZE] = TEXT("");
+	TCHAR  buf[BUFSIZE] = TEXT("");
+	TCHAR** lppPart = { NULL };
 	
+	retval = GetFullPathName("../Sounds/kotsudumi1.mp3",
+		BUFSIZE,
+		buffer,
+		lppPart);
+	if (retval == 0)
+	{
+		// Handle an error condition.
+		printf("GetFullPathName failed (%d)\n", GetLastError());
+		
+	}
+	else
+	{
+		_tprintf(TEXT("The full path name is:  %s\n"), buffer);
+		if (lppPart != NULL && *lppPart != 0)
+		{
+			_tprintf(TEXT("The final component in the path name is:  %s\n"), *lppPart);
+		}
+	}
+	
+	media_url = CComBSTR(4096, buffer);
+		
 	if (!cap.isOpened())  // check if we succeeded
 		return -1;
 
@@ -50,6 +88,20 @@ int main(int argc, char** argv)
 	cap.set(CAP_PROP_FRAME_WIDTH, captureWidth);
 	cap.set(CAP_PROP_FRAME_HEIGHT, captureHeight);
 
+	CoInitialize(NULL);
+
+	HRESULT hr = S_OK;
+	CComBSTR bstrVersionInfo; // Contains the version string.
+	CComPtr<IWMPPlayer4> spPlayer;  // Smart pointer to IWMPPlayer interface.
+
+	hr = spPlayer.CoCreateInstance(__uuidof(WindowsMediaPlayer), 0, CLSCTX_INPROC_SERVER);
+
+	if (SUCCEEDED(hr))
+	{
+		hr = spPlayer->get_versionInfo(&bstrVersionInfo);
+		//spPlayer->openPlayer(media_url);
+	}
+
 	for (;;)
 	{
 		Mat frame;
@@ -58,7 +110,7 @@ int main(int argc, char** argv)
 		cap >> frame; // get a new frame from camera
 		Mat frame1 = frame.clone();
 		Rect face_area = filterSkinColor(frame1);
-		detectAndDraw(frame1, cascade, nestedCascade, scale, tryflip, overlay_image, face_area);
+		detectAndDraw(frame1, cascade, nestedCascade, scale, tryflip, overlay_image, face_area, spPlayer);
 
 		int64 end = cv::getTickCount();
 		double elapsedMsec = (end - start) * 1000 / cv::getTickFrequency();
@@ -68,13 +120,14 @@ int main(int argc, char** argv)
 		if (c == 27 || c == 'q' || c == 'Q')
 			break;
 	}
-
+	spPlayer.Release();
+	CoUninitialize();
 	return 0;
 }
 
 void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	CascadeClassifier& nestedCascade,
-	double scale, bool tryflip, Mat& overlayImg, Rect roi_area)
+	double scale, bool tryflip, Mat& overlayImg, Rect roi_area, CComPtr<IWMPPlayer4> player)
 {
 	double t = 0;
 	double zoomFactor = 1.0;
@@ -136,12 +189,10 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	t = (double)cvGetTickCount() - t;
 	//printf("detection time = %g ms\n", t / ((double)cvGetTickFrequency()*1000.));
 	if (faces.size() > 0) {
-		for (size_t i = 0; i < 1; i++) // i < 1 instead of faces.size() to get only one face
+		for (size_t i = 0; i < 1; i++) // faces.size() ではなく、i < 1 にすれば認識結果を一つだけ利用する
 		{
 			currentIteration++;
 			Rect r = faces[i];
-			//Mat smallImgROI;
-			//vector<Rect> nestedObjects;
 			Point center;
 			Scalar color = colors[i % 8];
 			int radius;
@@ -162,20 +213,21 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 			double aspect_ratio = (double)r.width / r.height;
 			if (0.75 < aspect_ratio && aspect_ratio < 1.3)
 			{
-
-				center.x = cvRound((r.x + r.width*0.5)*scale);
-				center.y = cvRound((r.y + r.height*0.5)*scale);
-				radius = cvRound((r.width + r.height)*0.25*scale);
-				//circle(img, center, radius, color, 3, 8, 0);
-
-				DrawTransPinP(img, overlayImg, img, tgtPt);
+				drawTransPinP(img, overlayImg, img, tgtPt);
 
 				if (currentIteration > faceFoundConfidenceIteration) {
-					if (curZoomFactor > maxZoomFactor) curZoomFactor = maxZoomFactor;
+					
+					if (curZoomFactor > maxZoomFactor) { 
+						curZoomFactor = maxZoomFactor; 			
+					}
+					if (curZoomFactor == 1.0) {
+						player->openPlayer(media_url);
+					}
 					zoomPicture(img, zoomedImage, Point2i((r.x + r.width / 2), (r.y + r.height / 3)), curZoomFactor);
 					curZoomFactor += maxZoomFactor / zoomStep;
 				}
-				rectangle(img, cv::Point(roi_area.x, roi_area.y), cv::Point(roi_area.x + roi_area.width, roi_area.y + roi_area.height), color, 3, 8, 0);
+				
+				//rectangle(img, cv::Point(roi_area.x, roi_area.y), cv::Point(roi_area.x + roi_area.width, roi_area.y + roi_area.height), color, 3, 8, 0);
 
 			}		
 		}
@@ -186,15 +238,13 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	}
 
 	
-	cvNamedWindow("zoomed", CV_WINDOW_NORMAL);
-	cvSetWindowProperty("zoomed", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-	//imshow("zoomed", zoomedImage);
-	
+	//cvNamedWindow("zoomed", CV_WINDOW_NORMAL);
+	//cvSetWindowProperty("zoomed", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 	//imshow("result", img);
 	imshow("zoomed", zoomedImage);
 }
 
-void DrawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseImg, vector<cv::Point2f> tgtPt)
+void drawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseImg, vector<cv::Point2f> tgtPt)
 {
 	cv::Mat img_rgb, img_aaa, img_1ma;
 	vector<cv::Mat>planes_rgba, planes_rgb, planes_aaa, planes_1ma;
@@ -282,7 +332,9 @@ void zoomPicture(cv::Mat src, cv::Mat dst, cv::Point2i center, double rate)
 
 }
 
-//this function will return a skin masked image
+/*
+肌色の領域を返す。この領域内で検出された顔のみ「顔」として扱う
+*/
 Rect filterSkinColor(Mat input)
 {
 	int largest_area = 0;
@@ -316,7 +368,7 @@ Rect filterSkinColor(Mat input)
 			bounding_rect = boundingRect(contours[i]); // Find the bounding rectangle for biggest contour
 		}
 	}
-	Scalar color(255, 255, 255);
+	//Scalar color(255, 255, 255);
 	//drawContours(skin, contours, largest_contour_index, color, CV_FILLED, 8, hierarchy); // Draw the largest contour using previously stored index.
 	//rectangle(skin, bounding_rect, Scalar(0, 255, 0), 1, 8, 0);
 	//imshow("skin", skin);
