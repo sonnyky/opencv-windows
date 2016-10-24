@@ -29,7 +29,7 @@ c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facede
 c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(280): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
 c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(281): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
 c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(323): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(360): warning C4018: '<': signed/unsigned mismatch
-c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(364): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(362): warning C4018: '<': signed/unsigned mismatch
+c:\users\sonny\desktop\workspace\opencv-projects\facedetection\facedetect\facedetect\main.cpp(366): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
   FaceDetect.vcxproj -> C:\Users\Sonny\Desktop\Workspace\OpenCV-Projects\FaceDetection\FaceDetect\Debug\FaceDetect.exe
   FaceDetect.vcxproj -> C:\Users\Sonny\Desktop\Workspace\OpenCV-Projects\FaceDetection\FaceDetect\Debug\FaceDetect.pdb (Full PDB)
