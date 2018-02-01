@@ -45,7 +45,7 @@ int main(int argc, char** argv)
 {
 	VideoCapture cap(0); // open the default camera
 	CascadeClassifier cascade, nestedCascade;
-	Mat overlay_image = imread("../Stamps/kabuki.png", cv::IMREAD_UNCHANGED);
+	Mat overlay_image = imread("../stamps/kabuki.png", cv::IMREAD_UNCHANGED);
 
 	DWORD  retval = 0;
 	BOOL   success;
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 	TCHAR  buf[BUFSIZE] = TEXT("");
 	TCHAR** lppPart = { NULL };
 	
-	retval = GetFullPathName("../Sounds/kotsudumi1.mp3",
+	retval = GetFullPathName((LPCWSTR)"../sounds/hand_drum.mp3",
 		BUFSIZE,
 		buffer,
 		lppPart);
