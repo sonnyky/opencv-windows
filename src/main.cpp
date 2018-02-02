@@ -36,8 +36,8 @@ BSTR media_url;
 */
 int captureHeight = 1280;
 int captureWidth = 720;
-string cascadeName = "C:/Users/Sonny/Desktop/Workspace/opencv/build/etc/haarcascades/haarcascade_frontalface_alt2.xml";
-string nestedCascadeName = "C:/Users/Sonny/Desktop/Workspace/opencv/build/etc/haarcascades/haarcascade_eye.xml";
+string cascadeName = "D:/Libraries/opencv3.1.0/build/etc/haarcascades/haarcascade_frontalface_alt2.xml";
+string nestedCascadeName = "D:/Libraries/opencv3.1.0/build/etc/haarcascades/haarcascade_eye.xml";
 double scale = 1.0;
 bool tryflip = true;
 
