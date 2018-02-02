@@ -7,7 +7,7 @@ project(base_opencv)
 # Find OpenCV, you may need to set OpenCV_DIR variable
 # to the absolute path to the directory containing OpenCVConfig.cmake file
 # via the command line or GUI
-set( OpenCV_DIR "D:/Libraries/opencv3.1.0/build" )
+set( OpenCV_DIR "D:/Libraries/opencv3.4.0/build" )
 option( OpenCV_STATIC OFF )
 find_package(OpenCV REQUIRED)
 
@@ -33,11 +33,10 @@ if(CMAKE_VERSION VERSION_LESS "2.8.11")
   include_directories(${OpenCV_INCLUDE_DIRS})
 endif()
 
-add_definitions(-D_UNICODE)
 
 # Declare the executable target built from your sources
-set(SOURCES src/main.cpp  ${ADDITIONAL_INCLUDE}/app.h)
-add_executable(base_opencv ${SOURCES} )
+set(SOURCES src/main.cpp src/app.cpp ${ADDITIONAL_INCLUDE}/app.h)
+add_executable(base_opencv WIN32 ${SOURCES} )
 
 if(WIN32)
   target_link_libraries(base_opencv wsock32 ws2_32 winmm)
