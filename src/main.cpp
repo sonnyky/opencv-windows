@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 	TCHAR  buf[BUFSIZE] = TEXT("");
 	TCHAR** lppPart = { NULL };
 	
-	retval = GetFullPathName((LPCWSTR)"../sounds/hand_drum.mp3",
+	retval = GetFullPathName((LPCSTR)"../sounds/hand_drum.mp3",
 		BUFSIZE,
 		buffer,
 		lppPart);
