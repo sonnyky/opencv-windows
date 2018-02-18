@@ -17,19 +17,9 @@ using namespace std;
 /*
 main 以外の関数宣言
 */
-void detectAndDraw(Mat& img, CascadeClassifier& cascade, CascadeClassifier& nestedCascade, double scale, bool tryflip, Mat& overlayImg, Rect roi_area, CComPtr<IWMPPlayer4> player);
+void detectAndDraw(Mat& img, CascadeClassifier& cascade, CascadeClassifier& nestedCascade, double scale, bool tryflip, Rect roi_area);
 void  drawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseImg, vector<cv::Point2f> tgtPt);
 Rect filterSkinColor(Mat frame);
-void zoomPicture(cv::Mat src, cv::Mat dst, cv::Point2i center, double rate);
-
-/*
-顔ズームイン用
-*/
-bool zoomEffect = false; bool face_detected = false;
-int zoomStep = 5;
-double maxZoomFactor = 2.3, curZoomFactor = 1.0;
-int faceFoundConfidenceIteration = 20, currentIteration = 0;
-BSTR media_url;
 
 /*
 キャプチャと顔認識の設定
@@ -45,35 +35,8 @@ int main(int argc, char** argv)
 {
 	VideoCapture cap(0); // open the default camera
 	CascadeClassifier cascade, nestedCascade;
-	Mat overlay_image = imread("../stamps/kabuki.png", cv::IMREAD_UNCHANGED);
 
-	DWORD  retval = 0;
-	BOOL   success;
-	TCHAR  buffer[BUFSIZE] = TEXT("");
-	TCHAR  buf[BUFSIZE] = TEXT("");
-	TCHAR** lppPart = { NULL };
-	
-	retval = GetFullPathName((LPCSTR)"../sounds/hand_drum.mp3",
-		BUFSIZE,
-		buffer,
-		lppPart);
-	if (retval == 0)
-	{
-		// Handle an error condition.
-		printf("GetFullPathName failed (%d)\n", GetLastError());
-		
-	}
-	else
-	{
-		_tprintf(TEXT("The full path name is:  %s\n"), buffer);
-		if (lppPart != NULL && *lppPart != 0)
-		{
-			_tprintf(TEXT("The final component in the path name is:  %s\n"), *lppPart);
-		}
-	}
-	
-	media_url = CComBSTR(4096, buffer);
-		
+			
 	if (!cap.isOpened())  // check if we succeeded
 		return -1;
 
@@ -88,20 +51,6 @@ int main(int argc, char** argv)
 	cap.set(CAP_PROP_FRAME_WIDTH, captureWidth);
 	cap.set(CAP_PROP_FRAME_HEIGHT, captureHeight);
 
-	CoInitialize(NULL);
-
-	HRESULT hr = S_OK;
-	CComBSTR bstrVersionInfo; // Contains the version string.
-	CComPtr<IWMPPlayer4> spPlayer;  // Smart pointer to IWMPPlayer interface.
-
-	hr = spPlayer.CoCreateInstance(__uuidof(WindowsMediaPlayer), 0, CLSCTX_INPROC_SERVER);
-
-	if (SUCCEEDED(hr))
-	{
-		hr = spPlayer->get_versionInfo(&bstrVersionInfo);
-		//spPlayer->openPlayer(media_url);
-	}
-
 	for (;;)
 	{
 		Mat frame;
@@ -110,7 +59,7 @@ int main(int argc, char** argv)
 		cap >> frame; // get a new frame from camera
 		Mat frame1 = frame.clone();
 		Rect face_area = filterSkinColor(frame1);
-		detectAndDraw(frame1, cascade, nestedCascade, scale, tryflip, overlay_image, face_area, spPlayer);
+		detectAndDraw(frame1, cascade, nestedCascade, scale, tryflip, face_area);
 
 		int64 end = cv::getTickCount();
 		double elapsedMsec = (end - start) * 1000 / cv::getTickFrequency();
@@ -120,14 +69,12 @@ int main(int argc, char** argv)
 		if (c == 27 || c == 'q' || c == 'Q')
 			break;
 	}
-	spPlayer.Release();
-	CoUninitialize();
 	return 0;
 }
 
 void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	CascadeClassifier& nestedCascade,
-	double scale, bool tryflip, Mat& overlayImg, Rect roi_area, CComPtr<IWMPPlayer4> player)
+	double scale, bool tryflip, Rect roi_area)
 {
 	double t = 0;
 	double zoomFactor = 1.0;
@@ -191,7 +138,6 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	if (faces.size() > 0) {
 		for (size_t i = 0; i < 1; i++) // faces.size() ではなく、i < 1 にすれば認識結果を一つだけ利用する
 		{
-			currentIteration++;
 			Rect r = faces[i];
 			Point center;
 			Scalar color = colors[i % 8];
@@ -212,35 +158,14 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 
 			double aspect_ratio = (double)r.width / r.height;
 			if (0.75 < aspect_ratio && aspect_ratio < 1.3)
-			{
-				drawTransPinP(img, overlayImg, img, tgtPt);
-
-				if (currentIteration > faceFoundConfidenceIteration) {
-					
-					if (curZoomFactor > maxZoomFactor) { 
-						curZoomFactor = maxZoomFactor; 			
-					}
-					if (curZoomFactor == 1.0) {
-						player->openPlayer(media_url);
-					}
-					zoomPicture(img, zoomedImage, Point2i((r.x + r.width / 2), (r.y + r.height / 3)), curZoomFactor);
-					curZoomFactor += maxZoomFactor / zoomStep;
-				}
-				
+			{	
 				//rectangle(img, cv::Point(roi_area.x, roi_area.y), cv::Point(roi_area.x + roi_area.width, roi_area.y + roi_area.height), color, 3, 8, 0);
-
 			}		
 		}
 	}
 	else {
-		currentIteration = 0;
-		curZoomFactor = 1.0;
+		
 	}
-
-	
-	//cvNamedWindow("zoomed", CV_WINDOW_NORMAL);
-	//cvSetWindowProperty("zoomed", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-	//imshow("result", img);
 	imshow("zoomed", zoomedImage);
 }
 
@@ -310,27 +235,6 @@ void drawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseI
 	img_dst = img_rgb.mul(img_aaa, 1.0 / (double)maxVal) + baseImg.mul(img_1ma, 1.0 / (double)maxVal);
 }
 
-void zoomPicture(cv::Mat src, cv::Mat dst, cv::Point2i center, double rate)
-{
-	if (rate < 1.0) {//縮小は未対応なのでそのまま
-		src.copyTo(dst);
-		return;
-	}
-
-	cv::Mat resizeSrc;
-	cv::resize(src, resizeSrc, cv::Size2i(0, 0), rate, rate);
-	//拡大後の拡大中心
-	cv::Point2i resizeCenter(center.x*rate, center.y*rate);
-
-	//拡大中心と拡大率の設定次第で元の画像をはみ出してしまうので余白を入れる
-	int blankHeight = src.rows / 2;//元画像の上下にそれぞれ入れる余白の画素数
-	int blankWidth = src.cols / 2;//元画像の左右にそれぞれ入れる余白の画素数
-	cv::Mat resizeSrcOnBlank = cv::Mat::zeros(resizeSrc.rows + 2 * blankHeight, resizeSrc.cols + 2 * blankWidth, CV_8UC3);
-	resizeSrc.copyTo(resizeSrcOnBlank(cv::Rect(blankWidth, blankHeight, resizeSrc.cols, resizeSrc.rows)));
-	resizeSrcOnBlank(cv::Rect(resizeCenter.x + blankWidth - src.cols / 2, resizeCenter.y + blankHeight - src.rows / 2, src.cols, src.rows)).copyTo(dst);
-	return;
-
-}
 
 /*
 肌色の領域を返す。この領域内で検出された顔のみ「顔」として扱う
