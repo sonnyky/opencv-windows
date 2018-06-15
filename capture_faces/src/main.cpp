@@ -17,7 +17,7 @@ using namespace std;
 /*
 main à»äOÇÃä÷êîêÈåæ
 */
-void detectAndDraw(Mat& img, CascadeClassifier& cascade, CascadeClassifier& nestedCascade, double scale, bool tryflip, Rect roi_area);
+Rect detectAndDraw(Mat& img, CascadeClassifier& cascade, CascadeClassifier& nestedCascade, double scale, bool tryflip, Rect roi_area);
 void  drawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseImg, vector<cv::Point2f> tgtPt);
 Rect filterSkinColor(Mat frame);
 
@@ -30,6 +30,7 @@ string cascadeName = "D:/Libraries/opencv3.1.0/build/etc/haarcascades/haarcascad
 string nestedCascadeName = "D:/Libraries/opencv3.1.0/build/etc/haarcascades/haarcascade_eye.xml";
 double scale = 1.0;
 bool tryflip = true;
+int numbering = 0;
 
 int main(int argc, char** argv)
 {
@@ -59,7 +60,24 @@ int main(int argc, char** argv)
 		cap >> frame; // get a new frame from camera
 		Mat frame1 = frame.clone();
 		Rect face_area = filterSkinColor(frame1);
-		detectAndDraw(frame1, cascade, nestedCascade, scale, tryflip, face_area);
+		Rect face_roi = detectAndDraw(frame1, cascade, nestedCascade, scale, tryflip, face_area);
+
+		Mat onlyFace = frame1(face_roi);
+		Size faceSize(230, 280);
+		if (onlyFace.rows > 200 && onlyFace.cols > 200) {
+			resize(onlyFace, onlyFace, faceSize);
+			resizeWindow("Image", faceSize);
+			imshow("Image", onlyFace);
+			
+			int c = waitKey(10);
+			if (c == 'c') {
+				cout << "Capture" << endl;
+				std::ostringstream name;
+				name << "../../res/training_data/s2/" << numbering << ".jpg";
+				imwrite(name.str(), onlyFace);
+				numbering++;
+			}
+		}
 
 		int64 end = cv::getTickCount();
 		double elapsedMsec = (end - start) * 1000 / cv::getTickFrequency();
@@ -72,14 +90,13 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-void detectAndDraw(Mat& img, CascadeClassifier& cascade,
+Rect detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	CascadeClassifier& nestedCascade,
 	double scale, bool tryflip, Rect roi_area)
 {
 	double t = 0;
 	double zoomFactor = 1.0;
 	vector<Rect> faces, faces2, nestedObjects;
-	Mat zoomedImage = img.clone();
 	CvRect roiRect;
 
 	roiRect.x = 0; roiRect.y = 0; roiRect.width = 0; roiRect.height = 0;
@@ -159,14 +176,15 @@ void detectAndDraw(Mat& img, CascadeClassifier& cascade,
 			double aspect_ratio = (double)r.width / r.height;
 			if (0.75 < aspect_ratio && aspect_ratio < 1.3)
 			{	
-				//rectangle(img, cv::Point(roi_area.x, roi_area.y), cv::Point(roi_area.x + roi_area.width, roi_area.y + roi_area.height), color, 3, 8, 0);
+				rectangle(img, r, color, 3, 8, 0);
+				roiRect = r;
 			}		
 		}
 	}
 	else {
 		
 	}
-	imshow("zoomed", zoomedImage);
+	return roiRect;
 }
 
 void drawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseImg, vector<cv::Point2f> tgtPt)
