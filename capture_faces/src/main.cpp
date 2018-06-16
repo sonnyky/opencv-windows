@@ -72,16 +72,18 @@ int main(int argc, char** argv)
 			int c = waitKey(10);
 			if (c == 'c') {
 				cout << "Capture" << endl;
+				Mat face_gray;
+				cvtColor(onlyFace, face_gray, COLOR_BGR2GRAY);
 				std::ostringstream name;
-				name << "../../res/training_data/s2/" << numbering << ".jpg";
-				imwrite(name.str(), onlyFace);
+				name << "../../res/training_data/s3/" << numbering << ".jpg";
+				imwrite(name.str(), face_gray);
 				numbering++;
 			}
 		}
 
 		int64 end = cv::getTickCount();
 		double elapsedMsec = (end - start) * 1000 / cv::getTickFrequency();
-		std::cout << elapsedMsec << "ms" << std::endl;
+		//std::cout << elapsedMsec << "ms" << std::endl;
 
 		int c = waitKey(10);
 		if (c == 27 || c == 'q' || c == 'Q')

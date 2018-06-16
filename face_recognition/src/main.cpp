@@ -39,7 +39,8 @@ bool tryflip = true;
 string g_listname_t[] =
 {
 	"Sonny",
-	"Jun"
+	"Obama",
+	"Jackie"
 };
 
 static void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
@@ -98,7 +99,8 @@ int main(int argc, char** argv)
 	}
 
 	// Create a FaceRecognizer and train it on the given images:
-	Ptr<FaceRecognizer> model = FisherFaceRecognizer::create();
+	Ptr<FaceRecognizer> model = LBPHFaceRecognizer::create();
+	model->setThreshold(40);
 	model->train(images, labels);
 
 	CascadeClassifier haar_cascade;
@@ -119,6 +121,7 @@ int main(int argc, char** argv)
 		cvtColor(original, gray, CV_BGR2GRAY);
 		// Find the faces in the frame:
 		vector< Rect_<int> > faces;
+		faces.clear();
 		haar_cascade.detectMultiScale(gray, faces);
 
 
@@ -132,15 +135,21 @@ int main(int argc, char** argv)
 			Mat face_resized;
 			resize(face, face_resized, Size(im_width, im_height), 1.0, 1.0, INTER_CUBIC);
 
-			int prediction = model->predict(face_resized);
+			int prediction = -1;
+			double confidence = 0;
+			model->predict(face_resized, prediction, confidence);
+
 			// And finally write all we've found out to the original image!
 			// First of all draw a green rectangle around the detected face:
 			rectangle(original, face_i, CV_RGB(0, 255, 0), 1);
 			// Create the text we will annotate the box with:
 			string box_text;
 			box_text = format("Prediction = ");
+
+			cout << "prediction :"  << prediction <<  "and confidence is : " << confidence<< endl;
+
 			// Get stringname
-			if (prediction >= 0 && prediction <= 1)
+			if (prediction >= 0 && prediction < g_listname_t->size())
 			{
 				box_text.append(g_listname_t[prediction]);
 			}
