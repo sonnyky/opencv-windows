@@ -34,6 +34,14 @@ int numbering = 0;
 
 int main(int argc, char** argv)
 {
+
+	if (argc == 1) {
+		cout << "not enough arguments.." << endl;
+		exit(1);
+	}
+
+	const char * path = argv[1];
+
 	VideoCapture cap(0); // open the default camera
 	CascadeClassifier cascade, nestedCascade;
 
@@ -75,7 +83,7 @@ int main(int argc, char** argv)
 				Mat face_gray;
 				cvtColor(onlyFace, face_gray, COLOR_BGR2GRAY);
 				std::ostringstream name;
-				name << "../../res/training_data/s3/" << numbering << ".jpg";
+				name << "../../res/training_data/"<< path << '/' << numbering << ".jpg";
 				imwrite(name.str(), face_gray);
 				numbering++;
 			}
