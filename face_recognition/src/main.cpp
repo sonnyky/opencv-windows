@@ -40,7 +40,8 @@ string g_listname_t[] =
 {
 	"Sonny",
 	"Obama",
-	"Jackie"
+	"Jackie",
+	"Yahaty"
 };
 
 static void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
@@ -100,7 +101,7 @@ int main(int argc, char** argv)
 
 	// Create a FaceRecognizer and train it on the given images:
 	Ptr<FaceRecognizer> model = LBPHFaceRecognizer::create();
-	model->setThreshold(40);
+	model->setThreshold(60);
 	model->train(images, labels);
 
 	CascadeClassifier haar_cascade;
