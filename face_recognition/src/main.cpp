@@ -41,7 +41,8 @@ string g_listname_t[] =
 	"Sonny",
 	"Obama",
 	"Jackie",
-	"Yahaty"
+	"Yahaty",
+	"Kimmy"
 };
 
 static void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
