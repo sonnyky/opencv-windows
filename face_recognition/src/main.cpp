@@ -10,7 +10,8 @@
 #include "wmp.h"
 #include <Windows.h>
 #include <comutil.h>
-#include <algorithm>  
+#include <algorithm>
+#include <sys/stat.h>
 
 using namespace cv;
 using namespace cv::face;
@@ -63,6 +64,14 @@ static void read_csv(const string& filename, vector<Mat>& images, vector<int>& l
 	}
 }
 
+/*
+Reference : https://stackoverflow.com/questions/12774207/fastest-way-to-check-if-a-file-exist-using-standard-c-c11-c
+*/
+inline bool file_exists(const std::string& name) {
+	struct stat buffer;
+	return (stat(name.c_str(), &buffer) == 0);
+}
+
 
 int main(int argc, char** argv)
 {
@@ -102,9 +111,21 @@ int main(int argc, char** argv)
 
 	// Create a FaceRecognizer and train it on the given images:
 	Ptr<FaceRecognizer> model = LBPHFaceRecognizer::create();
-	model->setThreshold(60);
-	model->train(images, labels);
 
+	if (file_exists("trained_faces.yml")) {
+		cout << "Training file found. Loading..." << endl;
+
+		model->read("trained_faces.yml");
+	}
+	else {
+
+		cout << "Training file not found. Create new one." << endl;
+
+		// Train and save to file.
+		model->setThreshold(60);
+		model->train(images, labels);
+		model->write("trained_faces.yml");
+	}
 	CascadeClassifier haar_cascade;
 	haar_cascade.load(cascadeName);
 
