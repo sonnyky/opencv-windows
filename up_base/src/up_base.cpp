@@ -52,6 +52,9 @@ void up_base::save_black_and_white(unsigned char * bytes, int rows, int cols, in
 
 	Mat img(rows, cols, CV_8UC4);
 	memcpy(img.data, bytes, rows * cols * 4);
+
+	flip(img, img, 0);
+
 	imwrite("bw.jpg", img);
 	/*
 	Mat gray;
