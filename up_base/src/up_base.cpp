@@ -38,3 +38,28 @@ LPCSTR up_base::echo(const char * input)
 	myfile.close();
 	return echo.c_str();
 }
+
+void up_base::save_black_and_white(unsigned char * bytes, int rows, int cols, int type)
+{
+
+	ofstream myfile;
+	myfile.open("testImage.txt");
+	
+	myfile << "rows and cols";
+	myfile << "\n";
+	myfile << to_string(rows) << ", " << to_string(cols);
+	myfile.close();
+
+	Mat img(rows, cols, CV_8UC4);
+	memcpy(img.data, bytes, rows * cols * 4);
+
+	flip(img, img, 0);
+
+	imwrite("bw.jpg", img);
+	/*
+	Mat gray;
+
+	cvtColor(img, gray, CV_BGR2GRAY);
+
+	imwrite("bw.jpg", gray);*/
+}

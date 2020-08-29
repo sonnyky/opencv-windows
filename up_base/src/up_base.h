@@ -18,4 +18,6 @@ public:
 	~up_base();
 
 	LPCSTR echo(const char * input);
+
+	void save_black_and_white(unsigned char * bytes, int rows, int cols, int type);
 };
