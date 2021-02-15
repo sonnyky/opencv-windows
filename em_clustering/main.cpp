@@ -15,7 +15,21 @@ using namespace std;
 Mat asSamplesVectors(Mat& img);
 int main(int argc, char* argv[])
 {
-	Mat img = imread("../../images/ufo_small.JPG", IMREAD_UNCHANGED);
+	if (argc < 3) return 1;
+	int numOfClusters = 2;
+	Mat img = imread(argv[1], IMREAD_UNCHANGED);
+	if (img.empty()) {
+		return 1;
+	}
+	
+	try
+	{
+		numOfClusters = stoi(argv[2]);
+	}
+	catch (exception a)
+	{
+		return 1;
+	}
 	namedWindow("image", WINDOW_NORMAL);
 	namedWindow("reverted", WINDOW_NORMAL);
 
