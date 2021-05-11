@@ -32,7 +32,7 @@ void Capture::initialize() {
 	cap.set(CV_CAP_PROP_FRAME_WIDTH, 2048);
 	cap.set(CV_CAP_PROP_FRAME_HEIGHT, 1536);
 	*/
-	cvNamedWindow("Detected", CV_WINDOW_NORMAL);
+	namedWindow("Detected", WINDOW_NORMAL);
 
 	cv::Mat markerImage;
 	currentDict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_ARUCO_ORIGINAL);
@@ -76,7 +76,7 @@ void Capture::filterColor(Mat image)
 	std::vector<std::vector<cv::Point>> contours; // Vector for storing contour
 	std::vector<cv::Vec4i> hierarchy;
 	//mask = mask1 | mask2;
-	findContours(mask, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE); // Find the contours in the image
+	findContours(mask, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE); // Find the contours in the image
 	vector<Rect> bounding_rect(contours.size());
 
 	for (int i = 0; i< contours.size(); i++) // iterate through each contour. 
@@ -94,7 +94,7 @@ void Capture::filterColor(Mat image)
 
 	}
 	cv::Scalar color(255, 255, 255);
-	drawContours(mask, contours, largest_contour_index, color, CV_FILLED, 8, hierarchy); 
+	drawContours(mask, contours, largest_contour_index, color, FILLED, 8, hierarchy); 
 	cv::imshow("filtered", mask);	
 }
 
@@ -110,7 +110,7 @@ inline void Capture::detectArucoMarkers(cv::Mat input) {
 
 	if (markerIds.size() > 0) {
 		//depthString.str(std::string());
-		cv::aruco::drawDetectedMarkers(input, markerCorners, markerIds, CvScalar(0, 0, 255));
+		cv::aruco::drawDetectedMarkers(input, markerCorners, markerIds, Scalar(0, 0, 255));
 		for (int i = 0; i < markerIds.size(); i++) {
 			Vec3i markerInfo;
 			//markerInfo[0] = markerIds[i];
