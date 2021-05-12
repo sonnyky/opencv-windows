@@ -25,13 +25,14 @@ Rect filterSkinColor(Mat frame);
 int main(int argc, char** argv)
 {
 
-	if (argc == 1) {
-		cout << "Path to settings file needed," << endl;
+	if (argc < 2) {
+		cout << "Path to settings file and person name needed," << endl;
 		exit(1);
 	}
 
 	const char * path = argv[1];
-	
+	string person_name = argv[2];
+
 #pragma region read capture settings
 	pugi::xml_document doc;
 	pugi::xml_parse_result result = doc.load_file(path);
@@ -104,7 +105,7 @@ int main(int argc, char** argv)
 				Mat face_gray;
 				cvtColor(onlyFace, face_gray, COLOR_BGR2GRAY);
 				std::ostringstream name;
-				name << path_to_training_data << '/' << numbering << ".jpg";
+				name << path_to_training_data << '/' << person_name << '/' << numbering << ".jpg";
 				imwrite(name.str(), face_gray);
 				numbering++;
 			}
