@@ -3,11 +3,12 @@
 #include <opencv2/highgui.hpp>
 #include "opencv2/opencv.hpp"
 #include <iostream>
-#include "atlbase.h"
-#include "atlwin.h"
+
 #include "wmp.h"
 #include <Windows.h>
 #include <comutil.h>
+
+#include "pugixml.hpp"
 
 using namespace cv;
 using namespace std;
@@ -17,30 +18,51 @@ using namespace std;
 /*
 main 以外の関数宣言
 */
-Rect detectAndDraw(Mat& img, CascadeClassifier& cascade, CascadeClassifier& nestedCascade, double scale, bool tryflip, Rect roi_area);
+Rect detectAndDraw(Mat& img, CascadeClassifier& cascade, CascadeClassifier& nestedCascade, double scale, bool tryflip, Rect roi_area, int width, int height);
 void  drawTransPinP(cv::Mat &img_dst, const cv::Mat transImg, const cv::Mat baseImg, vector<cv::Point2f> tgtPt);
 Rect filterSkinColor(Mat frame);
-
-/*
-キャプチャと顔認識の設定
-*/
-int captureHeight = 1280;
-int captureWidth = 720;
-string cascadeName = "D:/Libraries/opencv3.1.0/build/etc/haarcascades/haarcascade_frontalface_alt2.xml";
-string nestedCascadeName = "D:/Libraries/opencv3.1.0/build/etc/haarcascades/haarcascade_eye.xml";
-double scale = 1.0;
-bool tryflip = true;
-int numbering = 0;
 
 int main(int argc, char** argv)
 {
 
-	if (argc == 1) {
-		cout << "not enough arguments.." << endl;
+	if (argc < 2) {
+		cout << "Path to settings file and person name needed," << endl;
 		exit(1);
 	}
 
 	const char * path = argv[1];
+	string person_name = argv[2];
+
+#pragma region read capture settings
+	pugi::xml_document doc;
+	pugi::xml_parse_result result = doc.load_file(path);
+	cout << "Load result: " << result.description() << endl;
+
+	pugi::xpath_query query_path_to_face_cascade("/settings/capture_settings/path_to_face_cascade");
+	string path_to_face_cascade = query_path_to_face_cascade.evaluate_string(doc);
+
+	pugi::xpath_query query_path_to_nested_cascade("/settings/capture_settings/path_to_nested_cascade");
+	string path_to_nested_cascade = query_path_to_nested_cascade.evaluate_string(doc);
+
+	pugi::xpath_query query_path_to_training_data("/settings/capture_settings/path_to_training_data");
+	string path_to_training_data = query_path_to_training_data.evaluate_string(doc);
+
+	pugi::xpath_query query_width("/settings/capture_params/width");
+	int width = stoi(query_width.evaluate_string(doc));
+
+	pugi::xpath_query query_height("/settings/capture_params/height");
+	int height = stoi(query_height.evaluate_string(doc));
+
+	pugi::xpath_query query_scale("/settings/capture_params/scale");
+	double scale = stod(query_scale.evaluate_string(doc));
+
+	pugi::xpath_query query_flip("/settings/capture_params/flip");
+	int flip_face = stoi(query_flip.evaluate_string(doc));
+
+	pugi::xpath_query query_numbering("/settings/capture_params/numbering");
+	int numbering = stoi(query_numbering.evaluate_string(doc));
+
+#pragma endregion read capture settings
 
 	VideoCapture cap(0); // open the default camera
 	CascadeClassifier cascade, nestedCascade;
@@ -49,17 +71,17 @@ int main(int argc, char** argv)
 	if (!cap.isOpened())  // check if we succeeded
 		return -1;
 
-	if (!nestedCascade.load(nestedCascadeName))
+	if (!nestedCascade.load(path_to_nested_cascade))
 		cerr << "WARNING: Could not load classifier cascade for nested objects" << endl;
-	if (!cascade.load(cascadeName))
+	if (!cascade.load(path_to_face_cascade))
 	{
 		cerr << "ERROR: Could not load classifier cascade" << endl;
 		return -1;
 	}
 
-	cap.set(CAP_PROP_FRAME_WIDTH, captureWidth);
-	cap.set(CAP_PROP_FRAME_HEIGHT, captureHeight);
-
+	cap.set(CAP_PROP_FRAME_WIDTH, width);
+	cap.set(CAP_PROP_FRAME_HEIGHT, height);
+	cout << "Starting capture" << endl;
 	for (;;)
 	{
 		Mat frame;
@@ -68,7 +90,7 @@ int main(int argc, char** argv)
 		cap >> frame; // get a new frame from camera
 		Mat frame1 = frame.clone();
 		Rect face_area = filterSkinColor(frame1);
-		Rect face_roi = detectAndDraw(frame1, cascade, nestedCascade, scale, tryflip, face_area);
+		Rect face_roi = detectAndDraw(frame1, cascade, nestedCascade, scale, flip_face, face_area, width, height);
 
 		Mat onlyFace = frame1(face_roi);
 		Size faceSize(230, 280);
@@ -83,7 +105,7 @@ int main(int argc, char** argv)
 				Mat face_gray;
 				cvtColor(onlyFace, face_gray, COLOR_BGR2GRAY);
 				std::ostringstream name;
-				name << "../../res/training_data/"<< path << '/' << numbering << ".jpg";
+				name << path_to_training_data << '/' << person_name << '/' << numbering << ".jpg";
 				imwrite(name.str(), face_gray);
 				numbering++;
 			}
@@ -102,12 +124,12 @@ int main(int argc, char** argv)
 
 Rect detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	CascadeClassifier& nestedCascade,
-	double scale, bool tryflip, Rect roi_area)
+	double scale, bool tryflip, Rect roi_area, int captureWidth, int captureHeight)
 {
 	double t = 0;
 	double zoomFactor = 1.0;
 	vector<Rect> faces, faces2, nestedObjects;
-	CvRect roiRect;
+	Rect roiRect;
 
 	roiRect.x = 0; roiRect.y = 0; roiRect.width = 0; roiRect.height = 0;
 
@@ -129,7 +151,7 @@ Rect detectAndDraw(Mat& img, CascadeClassifier& cascade,
 	resize(gray, smallImg, Size(), fx, fx, INTER_LINEAR);
 	equalizeHist(smallImg, smallImg);
 	
-	t = (double)cvGetTickCount();
+	t = (double)getTickCount();
 	cascade.detectMultiScale(smallImg, faces,
 		1.1, 2, 0
 		//|CASCADE_FIND_BIGGEST_OBJECT
@@ -160,7 +182,7 @@ Rect detectAndDraw(Mat& img, CascadeClassifier& cascade,
 			}
 		}
 	}
-	t = (double)cvGetTickCount() - t;
+	t = (double)getTickCount() - t;
 	//printf("detection time = %g ms\n", t / ((double)cvGetTickFrequency()*1000.));
 	if (faces.size() > 0) {
 		for (size_t i = 0; i < 1; i++) // faces.size() ではなく、i < 1 にすれば認識結果を一つだけ利用する
@@ -289,7 +311,7 @@ Rect filterSkinColor(Mat input)
 	vector<vector<Point>> contours; // Vector for storing contour
 	vector<Vec4i> hierarchy;
 
-	findContours(mask, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE); // Find the contours in the image
+	findContours(mask, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE); // Find the contours in the image
 
 	for (int i = 0; i< contours.size(); i++) // iterate through each contour. 
 	{

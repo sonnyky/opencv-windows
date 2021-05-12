@@ -7,10 +7,11 @@ set (CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "default inst
 # Set additional include folders
 set (ADDITIONAL_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/include")
 
+include_directories(${PUGI_DIR})
 include_directories(${ADDITIONAL_INCLUDE})
 
 # Declare the executable target built from your sources
-set(SOURCES src/main.cpp src/app.cpp ${ADDITIONAL_INCLUDE}/app.h)
+set(SOURCES src/main.cpp src/app.cpp ${PUGI_DIR}/pugixml.cpp ${ADDITIONAL_INCLUDE}/app.h)
 add_executable(capture_faces ${SOURCES} )
 
 if(WIN32)

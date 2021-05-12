@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<settings>
+
+ <capture_settings>
+  <path_to_face_cascade>C:/Users/Sonny/Desktop/Libraries/opencv-4.5.0/opencv-4.5.0/data/haarcascades/haarcascade_frontalface_alt2.xml</path_to_face_cascade>
+  <path_to_nested_cascade>C:/Users/Sonny/Desktop/Libraries/opencv-4.5.0/opencv-4.5.0/data/haarcascades/haarcascade_eye.xml</path_to_nested_cascade>
+  <path_to_training_data>C:/Users/Sonny/Desktop/Workspace/opencv-windows/resources/capture_faces/data</path_to_training_data>
+ </capture_settings>
+
+ <capture_params>
+  <width>1920</width>
+  <height>1080</height>
+  <scale>1.0</scale>
+  <flip>1</flip>
+  <numbering>0</numbering>
+ </capture_params>
+
+</settings>
