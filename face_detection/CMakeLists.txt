@@ -35,7 +35,7 @@ endif()
 
 
 # Declare the executable target built from your sources
-set(SOURCES src/main.cpp src/app.cpp ${ADDITIONAL_INCLUDE}/app.h)
+set(SOURCES src/main.cpp src/app.cpp ${PUGI_DIR}/pugixml.cpp ${ADDITIONAL_INCLUDE}/app.h)
 add_executable(face_detection ${SOURCES} )
 
 if(WIN32)

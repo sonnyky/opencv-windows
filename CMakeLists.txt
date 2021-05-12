@@ -27,6 +27,9 @@ if(CMAKE_VERSION VERSION_LESS "2.8.11")
   include_directories(${OpenCV_INCLUDE_DIRS})
 endif()
 
+# PugiXML
+set(PUGI_DIR "C:/Users/Sonny/Desktop/Libraries/pugixml/pugixml-1.11/src")
+
 #add_subdirectory(face_zoom)
 #add_subdirectory(face_recognition)
 add_subdirectory(capture_faces)
